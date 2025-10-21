@@ -54,6 +54,18 @@ export async function getUsersPaged({ page = 1, limit = 10, q } = {}) {
     items = Array.isArray(data) ? data : []
     total = Number(res.headers.get('x-total-count') || items.length || 0)
   }
+  // If the server returned more items than the requested `limit` (or the filter
+  // endpoint returned all matches), apply client-side slicing so the UI shows
+  // only the items for the requested page while reporting the full total.
+  const requestedLimit = Number(limit)
+  const requestedPage = Number(page)
+  if (Array.isArray(items) && (items.length > requestedLimit || q)) {
+    const start = (requestedPage - 1) * requestedLimit
+    const end = start + requestedLimit
+    const pageItems = items.slice(start, end)
+    return { items: pageItems, total: Number(total || items.length) }
+  }
+
   return { items, total }
 }
 

@@ -8,6 +8,7 @@ export default function UsersList({ onSelect }) {
   const [loading, setLoading] = useState(true)
   const [error, setError] = useState(null)
   const [query, setQuery] = useState('')
+  const [searchInput, setSearchInput] = useState('')
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [total, setTotal] = useState(0)
@@ -144,7 +145,24 @@ export default function UsersList({ onSelect }) {
             <div className="mt-2 mt-md-0">
               <div className="input-group input-group-sm">
                 <span className="input-group-text">Search</span>
-                <input type="search" value={query} onChange={e => { setQuery(e.target.value); setPage(1) }} className="form-control" />
+                <input
+                  type="search"
+                  value={searchInput}
+                  onChange={e => setSearchInput(e.target.value)}
+                  onKeyDown={e => {
+                    if (e.key === 'Enter') {
+                      setQuery(searchInput)
+                      setPage(1)
+                    }
+                  }}
+                  onBlur={() => {
+                    if (searchInput !== query) {
+                      setQuery(searchInput)
+                      setPage(1)
+                    }
+                  }}
+                  className="form-control"
+                />
               </div>
             </div>
           </div>
