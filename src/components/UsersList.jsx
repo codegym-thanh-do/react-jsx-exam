@@ -1,5 +1,7 @@
 import React, { useEffect, useMemo, useState } from 'react'
 import { getUsersPaged, deleteUser } from '../services/userService'
+import UserForm from './UserForm'
+import Modal from './Modal'
 
 export default function UsersList({ onSelect }) {
   const [users, setUsers] = useState([])
@@ -9,6 +11,16 @@ export default function UsersList({ onSelect }) {
   const [page, setPage] = useState(1)
   const [pageSize, setPageSize] = useState(10)
   const [total, setTotal] = useState(0)
+  const [editingUserId, setEditingUserId] = useState(null)
+  const [showModal, setShowModal] = useState(false)
+  const [toast, setToast] = useState(null) // { type: 'success'|'danger', message }
+
+  // auto-dismiss toast after 3 seconds
+  useEffect(() => {
+    if (!toast) return
+    const id = setTimeout(() => setToast(null), 3000)
+    return () => clearTimeout(id)
+  }, [toast])
 
   useEffect(() => {
     let mounted = true
@@ -34,6 +46,26 @@ export default function UsersList({ onSelect }) {
       alert(err?.message || 'Delete failed')
     }
   }
+
+  function handleEdit(id) {
+    setEditingUserId(id)
+    setShowModal(true)
+  }
+
+  function closeModal() {
+    setShowModal(false)
+    setEditingUserId(null)
+  }
+
+  // autofocus first input when modal opened
+  useEffect(() => {
+    if (!showModal) return
+    const t = setTimeout(() => {
+      const input = document.querySelector('.modal input, .modal select, .modal textarea')
+      if (input) input.focus()
+    }, 50)
+    return () => clearTimeout(t)
+  }, [showModal])
 
   // server provides total
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
@@ -67,6 +99,7 @@ export default function UsersList({ onSelect }) {
   }
 
   return (
+    <>
     <div className="container my-4">
       <div className="card shadow-sm">
           <div className="card-header d-flex align-items-center justify-content-between">
@@ -106,7 +139,7 @@ export default function UsersList({ onSelect }) {
                   <th scope="col">Name</th>
                   <th scope="col">Email</th>
                   <th scope="col">Birthday</th>
-                  <th scope="col">Action</th>
+                  <th scope="col"></th>
                 </tr>
               </thead>
                 <tbody>
@@ -123,7 +156,7 @@ export default function UsersList({ onSelect }) {
                         <td>{formatBirthday(u.birthday)}</td>
                         <td>
                           <div className="d-flex gap-2">
-                            <button className="btn btn-sm btn-primary" onClick={() => onSelect?.(u.id)}>Edit</button>
+                            <button className="btn btn-sm btn-primary" onClick={() => handleEdit(u.id)}>Edit</button>
                             <button className="btn btn-sm btn-danger" onClick={() => handleDelete(u.id)}>Delete</button>
                           </div>
                         </td>
@@ -141,6 +174,42 @@ export default function UsersList({ onSelect }) {
         </div>
       </div>
     </div>
+    {showModal && (
+      <Modal onClose={closeModal}>
+        <div className="modal-dialog" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Edit User</h5>
+              <button type="button" className="btn-close" aria-label="Close" onClick={closeModal}></button>
+            </div>
+            <div className="modal-body">
+              <UserForm userId={editingUserId} onSaved={(result) => {
+                if (result && result.success) {
+                  setToast({ type: 'success', message: 'User updated successfully' })
+                } else {
+                  setToast({ type: 'danger', message: String(result?.error?.message || 'Update failed') })
+                }
+                closeModal();
+                /* refresh list */ setPage(1); getUsersPaged({ page: 1, limit: pageSize, q: query }).then(({ items, total }) => { setUsers(items); setTotal(total) }).catch(err => setError(err))
+              }} />
+            </div>
+          </div>
+        </div>
+      </Modal>
+    )}
+
+    {/* Toast container */}
+    <div aria-live="polite" aria-atomic="true" style={{ position: 'fixed', top: 12, right: 12, zIndex: 2000 }}>
+      {toast && (
+        <div className={`toast show text-white bg-${toast.type}`} role="alert" aria-live="assertive" aria-atomic="true" style={{ minWidth: 240 }}>
+          <div className="d-flex">
+            <div className="toast-body">{toast.message}</div>
+            <button type="button" className="btn-close btn-close-white me-2 m-auto" aria-label="Close" onClick={() => setToast(null)}></button>
+          </div>
+        </div>
+      )}
+    </div>
+    </>
   )
 }
 

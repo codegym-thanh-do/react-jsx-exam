@@ -2,7 +2,7 @@ import React, { useEffect, useState } from 'react'
 import { createUser, getUser, updateUser } from '../services/userService'
 
 export default function UserForm({ userId, onSaved }) {
-  const [form, setForm] = useState({ name: '', email: '' })
+  const [form, setForm] = useState({ name: '', email: '', birthday: '', password: '' })
   const [loading, setLoading] = useState(false)
   const [error, setError] = useState(null)
 
@@ -11,11 +11,16 @@ export default function UserForm({ userId, onSaved }) {
     if (userId) {
       setLoading(true)
       getUser(userId)
-        .then(data => mounted && setForm({ name: data.name || '', email: data.email || '' }))
+        .then(data => mounted && setForm({
+          name: data.name || '',
+          email: data.email || '',
+          birthday: data.birthday || '',
+          password: data.password || ''
+        }))
         .catch(err => mounted && setError(err))
         .finally(() => mounted && setLoading(false))
     } else {
-      setForm({ name: '', email: '' })
+      setForm({ name: '', email: '', birthday: '', password: '' })
     }
     return () => (mounted = false)
   }, [userId])
@@ -26,9 +31,12 @@ export default function UserForm({ userId, onSaved }) {
     try {
       if (userId) await updateUser(userId, form)
       else await createUser(form)
-      onSaved && onSaved()
+      const res = { success: true }
+      onSaved && onSaved(res)
     } catch (err) {
       setError(err)
+      const res = { success: false, error: err }
+      onSaved && onSaved(res)
     } finally {
       setLoading(false)
     }
@@ -44,6 +52,14 @@ export default function UserForm({ userId, onSaved }) {
       <div className="mb-3">
         <label className="form-label">Email</label>
         <input value={form.email} onChange={e => setForm(f => ({ ...f, email: e.target.value }))} className="form-control" />
+      </div>
+      <div className="mb-3">
+        <label className="form-label">Birthday</label>
+        <input type="date" value={form.birthday} onChange={e => setForm(f => ({ ...f, birthday: e.target.value }))} className="form-control" />
+      </div>
+      <div className="mb-3">
+        <label className="form-label">Password</label>
+        <input type="password" value={form.password} onChange={e => setForm(f => ({ ...f, password: e.target.value }))} className="form-control" />
       </div>
       <div>
         <button type="submit" className="btn btn-primary">{loading ? 'Saving…' : 'Save'}</button>
