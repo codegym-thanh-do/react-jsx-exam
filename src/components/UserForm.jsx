@@ -29,10 +29,15 @@ export default function UserForm({ userId, onSaved }) {
     e.preventDefault()
     setLoading(true)
     try {
-      if (userId) await updateUser(userId, form)
-      else await createUser(form)
-      const res = { success: true }
-      onSaved && onSaved(res)
+      if (userId) {
+        await updateUser(userId, form)
+        const res = { success: true, mode: 'update' }
+        onSaved && onSaved(res)
+      } else {
+        await createUser(form)
+        const res = { success: true, mode: 'create' }
+        onSaved && onSaved(res)
+      }
     } catch (err) {
       setError(err)
       const res = { success: false, error: err }

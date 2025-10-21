@@ -14,6 +14,8 @@ export default function UsersList({ onSelect }) {
   const [editingUserId, setEditingUserId] = useState(null)
   const [showModal, setShowModal] = useState(false)
   const [toast, setToast] = useState(null) // { type: 'success'|'danger', message }
+  const [deleteCandidate, setDeleteCandidate] = useState(null) // { id, name }
+  const [deleting, setDeleting] = useState(false)
 
   // auto-dismiss toast after 3 seconds
   useEffect(() => {
@@ -37,13 +39,30 @@ export default function UsersList({ onSelect }) {
     return () => (mounted = false)
   }, [page, pageSize, query])
 
-  async function handleDelete(id) {
-    if (!confirm('Delete this user?')) return
+  function promptDelete(id, name) {
+    setDeleteCandidate({ id, name })
+  }
+
+  function cancelDelete() {
+    setDeleteCandidate(null)
+    setDeleting(false)
+  }
+
+  async function confirmDelete() {
+    if (!deleteCandidate) return
+    setDeleting(true)
     try {
-      await deleteUser(id)
-      setUsers(u => u.filter(x => x.id !== id))
+      await deleteUser(deleteCandidate.id)
+      setToast({ type: 'success', message: 'User deleted successfully' })
+      cancelDelete()
+      // refresh list (keep current page)
+      getUsersPaged({ page, limit: pageSize, q: query }).then(({ items, total }) => {
+        setUsers(items)
+        setTotal(total)
+      }).catch(err => setError(err))
     } catch (err) {
-      alert(err?.message || 'Delete failed')
+      setToast({ type: 'danger', message: String(err?.message || 'Delete failed') })
+      setDeleting(false)
     }
   }
 
@@ -107,7 +126,10 @@ export default function UsersList({ onSelect }) {
               <h5 className="mb-0">Users</h5>
               <small className="text-muted">List of registered users</small>
             </div>
-            <div className="text-muted small">Total: {total}</div>
+            <div className="d-flex align-items-center gap-2">
+              <button className="btn btn-sm btn-success" onClick={() => { setEditingUserId(null); setShowModal(true) }}>Add user</button>
+              <div className="text-muted small">Total: {total}</div>
+            </div>
           </div>
           <div className="card-body">
           <div className="d-md-flex align-items-center justify-content-between mb-3">
@@ -157,7 +179,7 @@ export default function UsersList({ onSelect }) {
                         <td>
                           <div className="d-flex gap-2">
                             <button className="btn btn-sm btn-primary" onClick={() => handleEdit(u.id)}>Edit</button>
-                            <button className="btn btn-sm btn-danger" onClick={() => handleDelete(u.id)}>Delete</button>
+                            <button className="btn btn-sm btn-danger" onClick={() => promptDelete(u.id, u.name)}>Delete</button>
                           </div>
                         </td>
                       </tr>
@@ -179,19 +201,41 @@ export default function UsersList({ onSelect }) {
         <div className="modal-dialog" role="document">
           <div className="modal-content">
             <div className="modal-header">
-              <h5 className="modal-title">Edit User</h5>
+              <h5 className="modal-title">{editingUserId ? 'Edit User' : 'Create User'}</h5>
               <button type="button" className="btn-close" aria-label="Close" onClick={closeModal}></button>
             </div>
             <div className="modal-body">
               <UserForm userId={editingUserId} onSaved={(result) => {
                 if (result && result.success) {
-                  setToast({ type: 'success', message: 'User updated successfully' })
+                  const msg = result.mode === 'create' ? 'User created successfully' : 'User updated successfully'
+                  setToast({ type: 'success', message: msg })
                 } else {
-                  setToast({ type: 'danger', message: String(result?.error?.message || 'Update failed') })
+                  const op = result?.mode === 'create' ? 'creation' : 'update'
+                  setToast({ type: 'danger', message: String(result?.error?.message || `User ${op} failed`) })
                 }
                 closeModal();
                 /* refresh list */ setPage(1); getUsersPaged({ page: 1, limit: pageSize, q: query }).then(({ items, total }) => { setUsers(items); setTotal(total) }).catch(err => setError(err))
               }} />
+            </div>
+          </div>
+        </div>
+      </Modal>
+    )}
+
+    {deleteCandidate && (
+      <Modal onClose={cancelDelete}>
+        <div className="modal-dialog" role="document">
+          <div className="modal-content">
+            <div className="modal-header">
+              <h5 className="modal-title">Confirm delete</h5>
+              <button type="button" className="btn-close" aria-label="Close" onClick={cancelDelete}></button>
+            </div>
+            <div className="modal-body">
+              <p>Are you sure you want to delete user <strong>{deleteCandidate.name}</strong>?</p>
+            </div>
+            <div className="modal-footer">
+              <button className="btn btn-secondary" onClick={cancelDelete} disabled={deleting}>Cancel</button>
+              <button className="btn btn-danger" onClick={confirmDelete} disabled={deleting}>{deleting ? 'Deleting…' : 'Delete'}</button>
             </div>
           </div>
         </div>
