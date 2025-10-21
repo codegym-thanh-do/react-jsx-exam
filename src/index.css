@@ -1,5 +1,4 @@
 @import "bootstrap/dist/css/bootstrap.min.css";
-/* Using Bootstrap CSS instead of Tailwind */
 
 :root{--bg:#fff;--fg:#0f172a}
 html,body,#root{height:100%}

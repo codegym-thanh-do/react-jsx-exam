@@ -13,11 +13,10 @@ export default function UsersList({ onSelect }) {
   const [total, setTotal] = useState(0)
   const [editingUserId, setEditingUserId] = useState(null)
   const [showModal, setShowModal] = useState(false)
-  const [toast, setToast] = useState(null) // { type: 'success'|'danger', message }
-  const [deleteCandidate, setDeleteCandidate] = useState(null) // { id, name }
+  const [toast, setToast] = useState(null)
+  const [deleteCandidate, setDeleteCandidate] = useState(null)
   const [deleting, setDeleting] = useState(false)
 
-  // auto-dismiss toast after 3 seconds
   useEffect(() => {
     if (!toast) return
     const id = setTimeout(() => setToast(null), 3000)
@@ -27,7 +26,7 @@ export default function UsersList({ onSelect }) {
   useEffect(() => {
     let mounted = true
     setLoading(true)
-    // fetch paginated users from server API
+    
     getUsersPaged({ page, limit: pageSize, q: query })
       .then(({ items, total }) => {
         if (!mounted) return
@@ -55,7 +54,6 @@ export default function UsersList({ onSelect }) {
       await deleteUser(deleteCandidate.id)
       setToast({ type: 'success', message: 'User deleted successfully' })
       cancelDelete()
-      // refresh list (keep current page)
       getUsersPaged({ page, limit: pageSize, q: query }).then(({ items, total }) => {
         setUsers(items)
         setTotal(total)
@@ -76,7 +74,6 @@ export default function UsersList({ onSelect }) {
     setEditingUserId(null)
   }
 
-  // autofocus first input when modal opened
   useEffect(() => {
     if (!showModal) return
     const t = setTimeout(() => {
@@ -86,7 +83,6 @@ export default function UsersList({ onSelect }) {
     return () => clearTimeout(t)
   }, [showModal])
 
-  // server provides total
   const totalPages = Math.max(1, Math.ceil(total / pageSize))
   useEffect(() => {
     if (page > totalPages) setPage(totalPages)
@@ -205,7 +201,7 @@ export default function UsersList({ onSelect }) {
               <button type="button" className="btn-close" aria-label="Close" onClick={closeModal}></button>
             </div>
             <div className="modal-body">
-              <UserForm userId={editingUserId} onSaved={(result) => {
+                <UserForm userId={editingUserId} onSaved={(result) => {
                 if (result && result.success) {
                   const msg = result.mode === 'create' ? 'User created successfully' : 'User updated successfully'
                   setToast({ type: 'success', message: msg })
@@ -214,7 +210,7 @@ export default function UsersList({ onSelect }) {
                   setToast({ type: 'danger', message: String(result?.error?.message || `User ${op} failed`) })
                 }
                 closeModal();
-                /* refresh list */ setPage(1); getUsersPaged({ page: 1, limit: pageSize, q: query }).then(({ items, total }) => { setUsers(items); setTotal(total) }).catch(err => setError(err))
+                setPage(1); getUsersPaged({ page: 1, limit: pageSize, q: query }).then(({ items, total }) => { setUsers(items); setTotal(total) }).catch(err => setError(err))
               }} />
             </div>
           </div>
