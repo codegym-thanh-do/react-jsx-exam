@@ -2,21 +2,11 @@ node_modules/
 dist/
 .DS_Store
 .env
-# Node modules
-node_modules/
 
-# Build output
-dist/
-
-# Local env files
-.env*
-
-# IDE/editor config
 .idea/
 .vscode/
 
 # System files
-.DS_Store
 Thumbs.db
 
 # Log files
@@ -29,3 +19,4 @@ public/
 
 # Others
 *.local
+package-lock.json
